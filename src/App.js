@@ -70,6 +70,7 @@ import {
     Language,
     Int,
     TxInputsBuilder,
+    WithdrawalsBuilder,
 } from "@emurgo/cardano-serialization-lib-asmjs"
 import "./App.css";
 import {
@@ -150,6 +151,7 @@ class App extends React.Component {
             govActionBuilder: undefined,
             treasuryDonationAmount: undefined,
             treasuryValueAmount: undefined,
+            withdrawalAmount: undefined,
             // Certs
             voteDelegationTarget: "",
             voteDelegationStakeCred: "",
@@ -409,7 +411,7 @@ class App extends React.Component {
         try {
             const raw = await this.API.getChangeAddress();
             let address = Address.from_bytes(Buffer.from(raw, "hex"))
-            const changeAddress = address.to_bech32(address.network_id == 0?"addr":"addr_test")
+            const changeAddress = address.to_bech32(address.network_id === 0?"addr":"addr_test")
             this.setState({changeAddress})
         } catch (err) {
             console.log(err)
@@ -493,6 +495,7 @@ class App extends React.Component {
             govActionBuilder: undefined,
             treasuryDonationAmount: undefined,
             treasuryValueAmount: undefined,
+            withdrawalAmount: undefined,
             // Certs
             voteDelegationTarget: "",
             voteDelegationStakeCred: "",
@@ -765,6 +768,9 @@ class App extends React.Component {
         this.setState({certBuilder : undefined});
         this.setState({votingBuilder : undefined});
         this.setState({govActionBuilder : undefined});
+        this.setState({treasuryDonationAmount : undefined});
+        this.setState({treasuryValueAmount : undefined});
+        this.setState({withdrawalAmount : undefined});
     }
 
     refreshErrorState = async () => { 
@@ -862,6 +868,12 @@ class App extends React.Component {
             }
             if (this.state.treasuryValueAmount){
                 txBuilder.set_current_treasury_value(BigNum.from_str(this.state.treasuryValueAmount));
+            }
+            if (this.state.withdrawalAmount){
+                const rewardAddr = RewardAddress.from_address(Address.from_bech32(this.state.rewardAddress));
+                const withdrawalsBuilder = WithdrawalsBuilder.new()
+                withdrawalsBuilder.add(rewardAddr, BigNum.from_str(this.state.withdrawalAmount));
+                txBuilder.set_withdrawals_builder(withdrawalsBuilder);
             }
             if(this.state.guardrailScriptUsed){
                 try{
@@ -2699,7 +2711,24 @@ class App extends React.Component {
 
                             </div>
                         } />
-                        <Tab id="5" title="💸 MIR Transfer (depricated in Conway)" panel={
+                        <Tab id="5" title="✍️ Rewards account withdrawal" panel={
+                            <div style={{marginLeft: "20px"}}>
+
+                                <FormGroup
+                                    helperText="(lovelace)"
+                                    label="Amount to withdraw from stake account"
+                                    style={{ paddingTop: "10px" }}
+                                >
+                                    <InputGroup
+                                        disabled={false}
+                                        onChange={(event) => this.setState({withdrawalAmount : event.target.value})}
+                                        value={this.state.withdrawalAmount}
+                                    />
+                                </FormGroup>
+
+                            </div>
+                        } />
+                        <Tab id="6" title="💸 MIR Transfer (deprecated in Conway)" panel={
                             <div style={{marginLeft: "20px"}}>
 
                                 <FormGroup
@@ -2743,7 +2772,7 @@ class App extends React.Component {
                             </div>
                         } />
 
-                        <Tab id="6" title="🧬 Genesis Delegation Certificate (depricated in Conway)" panel={
+                        <Tab id="7" title="🧬 Genesis Delegation Certificate (deprecated in Conway)" panel={
                             <div style={{marginLeft: "20px"}}>
 
                                 <FormGroup
@@ -2787,7 +2816,7 @@ class App extends React.Component {
                             </div>
                         } />
 
-                        <Tab id="7" title=" 💯 Test Basic Transaction" panel={
+                        <Tab id="8" title=" 💯 Test Basic Transaction" panel={
                             <div style={{marginLeft: "20px"}}>
 
                                 <button style={{padding: "10px"}} onClick={ () => this.buildSubmitConwayTx(true) }>Build empty Tx</button>
@@ -2840,6 +2869,12 @@ class App extends React.Component {
                     </>
                 )}
                 
+                {this.state.withdrawalAmount && (
+                    <>
+                    <p><span style={{fontWeight: "lighter"}}> Withdrawal Amount: </span>{this.state.withdrawalAmount}</p>
+                    </>
+                )}
+
                 <button style={{padding: "10px"}} onClick={ () => this.buildSubmitConwayTx(true) }>.signTx() and .submitTx()</button>
                 <button style={{padding: "10px"}} onClick={this.refreshData}>Refresh</button> 
 
